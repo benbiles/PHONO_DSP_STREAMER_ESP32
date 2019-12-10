@@ -1,0 +1,2 @@
+PROJECT_NAME := PHONO_DSP_STREAMER_ESP32
+include $(ADF_PATH)/project.mk
