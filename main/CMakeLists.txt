@@ -1,4 +1,4 @@
-set(COMPONENT_SRCS "passthru.c")
+set(COMPONENT_SRCS "PHONO_DSP_STREAMER_ESP32.c")
 set(COMPONENT_ADD_INCLUDEDIRS .)
 
 register_component()

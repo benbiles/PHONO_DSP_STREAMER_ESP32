@@ -12,8 +12,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "esp_dsp.h"
-#include "esp_system.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -25,30 +23,38 @@
 
 #include "equalizer.h"  // we may as well try the esp-adf equalizer to !
 
+#include "esp_dsp.h"
+#include "esp_system.h"
+
 
 
 
 static const char *TAG = "PASSTHRU";
 
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+ #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE  // change if needed, default is CONFIG_LOG_DEFAULT_LEVEL
 
 
 // ben defines DSP iir phono curve
 
 float coeffs_lpf[5]; // load known biquad coefficiants here rather than generate them in code ?
 float w_lpf[5] = {0,0}; // we don't need delay for biquad filter ?
-// ben defines phono curve IIR biquad
-float coeffs_lpf[0] = 0.105263157894737;
-float coeffs_lpf[1] = -0.076417573949578;
-float coeffs_lpf[2] = -0.024632736829188;
-float coeffs_lpf[3] = 1.866859545059558;
-float coeffs_lpf[4] = -0.867284262601157;
+
+
+
 
 
 
 
 void app_main(void)
 {
+
+   // ben defines phono curve IIR biquad
+
+	   coeffs_lpf[0] =  0.105263157894737;
+	   coeffs_lpf[1] = -0.076417573949578;
+	   coeffs_lpf[2] = -0.024632736829188;
+	   coeffs_lpf[3] = 1.866859545059558;
+	   coeffs_lpf[4] = -0.867284262601157;
 
 	// setup handles
 
@@ -103,31 +109,30 @@ void app_main(void)
 
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s_read");
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s_write");
+
     // ben adds audio pipeline equalizer
     audio_pipeline_register(pipeline, equalizer, "equalizer");
 
 
- // BEN tries to process input audio signal using i2s_read pipe!!!
- //
- // not likely this will do work at all
- // we must understand how the i2s_stream_reader ( defined as i2s_read above ? ) is working
+ // BEN rough concept using dsps_biquad_f32 to process the data in i2s_read pipe.
+ // It would be better to modify equaliser code if its not sufficient ?
 
- // i2s_read is a function that reads whatver is currently in the DMA transfer buffer?
+    // DON't USE THIS!!
 
- // how about the timing ? usually we would read the buffer when its full ?
 
- // comment this block out for just testing the EQ
+//    int NN = sizeof(i2s_read); // get size of i2s_read pipe
+//      unsigned int start_b = xthal_get_ccount();
+//      esp_err_t ret = dsps_biquad_f32(&i2s_read, &i2s_write,NN, coeffs_lpf, w_lpf);
+//      unsigned int end_b = xthal_get_ccount();
+//      if (ret  != ESP_OK)
+//      {
+//          ESP_LOGE(TAG, "DSP iir Operation error = %i", ret);
+//          return;
+//      }
 
-      unsigned int start_b = xthal_get_ccount();
-      esp_err_t ret = dsps_biquad_f32(i2s_read, i2s_write, sizeOf(i2s_read), coeffs_lpf, w_lpf);
-      unsigned int end_b = xthal_get_ccount();
-      if (ret  != ESP_OK)
-      {
-          ESP_LOGE(TAG, "DSP iir Operation error = %i", ret);
-          return;
-      }
+  // END BEN's DSP iir idea
 
-    // END BEN's DSP iir modify
+
 
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream_reader-->equalizer-->i2s_stream_writer-->[codec_chip]");
 
