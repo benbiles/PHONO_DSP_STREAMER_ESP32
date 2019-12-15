@@ -15,8 +15,7 @@ PHASE 1 testing / notes
 merge passthrough example with equalizer example adding equalizer to the audio pipe signal chain.
 
 
-if equalizer is not powerful enough ( max -13db gains on each frequency band ) the hack dsp code into
-the samples modifier code in equalizer.
+if equalizer is not powerful enough or cannot be modified ( max -13db gains on each frequency band, phono curve requires max attenuation of -37db @ 20khz ) then hack dsp code into the samples modifier code in equalizer.
 
 dsps_iir_main.c DSP concept with esp-dsp libs. https://github.com/espressif/esp-dsp
 
