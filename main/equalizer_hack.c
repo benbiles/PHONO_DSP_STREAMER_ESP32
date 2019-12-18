@@ -117,7 +117,7 @@ static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,
 // boom !!
 
 
-int err = dsps_biquad_f32_ae32((float *)DspBuf,(float *)DspBuf,len,DSP_iir_coeffs,DSP_delay);
+dsps_biquad_f32_ae32((float *)DspBuf,(float *)DspBuf,len,DSP_iir_coeffs,DSP_delay);
 
 
 

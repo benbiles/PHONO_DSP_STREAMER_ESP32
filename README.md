@@ -12,14 +12,19 @@ The project will be modified to support better ADC and DAC hardware if DSP RIAA 
 
 PHASE 1 testing / notes
 
-merge passthrough example with equalizer example adding equalizer to the audio pipe signal chain.
+now hacked equalizer.c ( see equalizer_hack.c in main folder.  
+
+rename equalizer_hack.c to equalizer.c and replace in ESP-ADF framework , don't try to compile equalizer_hack.c in main  )
+
+pipeline including DspProcessor element now working
+
+audio_pipeline_link(pipeline, (const char *[]) {"i2s_read", "DspProcessor", "i2s_write"}, 3);
 
 
-if equalizer is not powerful enough or cannot be modified ( max -13db gains on each frequency band, phono curve requires max attenuation of -37db @ 20khz ) then hack dsp code into the samples modifier code in equalizer.
-
-dsps_iir_main.c DSP concept with esp-dsp libs. https://github.com/espressif/esp-dsp
+using dsps_iir_main.c DSP concept with esp-dsp libs. https://github.com/espressif/esp-dsp
 
 notes:
+
 float coeffs_lpf[5]; // load known biquad coefficiants here rather than generate them in code ?
 
 float w_lpf[5] = {0,0}; // we don't need delay for biquad filter ?
@@ -35,9 +40,20 @@ fwoat coeffs_lpf[3] = 1.866859545059558;
 float coeffs_lpf[4] = -0.867284262601157;
 
 
-
 // process samples in array with DSP IIR biquad RIIA phono curve
-dsps_biquad_f32(sampleArrayIN, sampleArrayOUT, Nsamples, *coeffs_lpf, *w_lpf);
+
+passthrough working with callbacks in place for DspBuf
+TO DO COMPLETE THIS:
+
+in equalizer.c
+
+samples are in what format when device is running in 32bit 96khz ?
+
+float -1 to +1 ? or int32_t ?
+
+float DspBuf[4096]
+
+dsps_biquad_f32_ae32(DspBuf,DspBuf,len,DSP_iir_coeffs,DSP_delay);
 
 
 
