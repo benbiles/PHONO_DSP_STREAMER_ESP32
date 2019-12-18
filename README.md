@@ -10,7 +10,9 @@ esp-adf libraries https://github.com/espressif/esp-adf
 The project will be modified to support better ADC and DAC hardware if DSP RIAA curve in DSP IIR biquads is succesful.
 
 
+
 PHASE 1 testing / notes
+
 
 now hacked equalizer.c ( see equalizer_hack.c in main folder.  
 
@@ -23,27 +25,16 @@ audio_pipeline_link(pipeline, (const char *[]) {"i2s_read", "DspProcessor", "i2s
 
 using dsps_iir_main.c DSP concept with esp-dsp libs. https://github.com/espressif/esp-dsp
 
-notes:
 
-float coeffs_lpf[5]; // load known biquad coefficiants here rather than generate them in code ?
-
-float w_lpf[5] = {0,0}; // we don't need delay for biquad filter ?
-
-float coeffs_lpf[0] = 0.105263157894737;
-
-float coeffs_lpf[1] = -0.076417573949578;
-
-float coeffs_lpf[2] = -0.024632736829188;
-
-fwoat coeffs_lpf[3] = 1.866859545059558;
-
-float coeffs_lpf[4] = -0.867284262601157;
 
 
 // process samples in array with DSP IIR biquad RIIA phono curve
 
 passthrough working with callbacks in place for DspBuf
+
+
 TO DO COMPLETE THIS:
+
 
 in equalizer.c
 
