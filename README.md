@@ -3,59 +3,51 @@ Phono Preamp DSP RIAA curve streamer for SONOS and other http HLS capable WiFi a
 
 Initially designed to run on ESP32-LyraT hardware using esp-idf libs ( Espressif IoT Development Framework ) and esp-adf libs.
 
-https://www.espressif.com/en/products/hardware/esp32-lyrat
+DEV BOARD https://www.espressif.com/en/products/hardware/esp32-lyrat
 
-esp-adf libraries https://github.com/espressif/esp-adf
+ESP-ADF  https://github.com/espressif/esp-adf
 
-The project will be modified to support better ADC and DAC hardware if DSP RIAA curve in DSP IIR biquads is succesful.
 
+DSP biquad IIR EQ working!
+
+LINE LEVEL input to HeadPhone output PASSTHROUGH
+
+
+warning, use ESP-ADF and ONLY compatible ESP-IDF. instructions on ESP-ADF github
 
 
 PHASE 1 testing / notes
 
 
-now hacked equalizer.c ( see equalizer_hack.c in main folder.  
+rename equalizer_hack.c to equalizer.c and replace in ESP-ADF framework.
 
-rename equalizer_hack.c to equalizer.c and replace in ESP-ADF framework , don't try to compile equalizer_hack.c in main  )
-
-pipeline including DspProcessor element now working
-
-audio_pipeline_link(pipeline, (const char *[]) {"i2s_read", "DspProcessor", "i2s_write"}, 3);
+remove equalizer_hack.c from main folder.
 
 
-using dsps_iir_main.c DSP concept with esp-dsp libs. https://github.com/espressif/esp-dsp
+PHASE 2
+
+1, test with technics SL-15 record deck.
+
+2, add digital controlled preamp in from of codec if required for proto.
+
+3, sine wave sweep / pink noise and check filter response
 
 
+PHASE 3.
 
+fire up wifi and push stream to laptop in 48khz 16bit pcm
 
-// process samples in array with DSP IIR biquad RIIA phono curve
-
-passthrough working with callbacks in place for DspBuf
-
-
-TO DO COMPLETE THIS:
-
-
-in equalizer.c
-
-samples are in what format when device is running in 32bit 96khz ?
-
-float -1 to +1 ? or int32_t ?
-
-float DspBuf[4096]
-
-dsps_biquad_f32_ae32(DspBuf,DspBuf,len,DSP_iir_coeffs,DSP_delay);
-
-
-
-PHASE 2.
+try a few other compressions ( aac opus etc )
 
 No obvious http HLS streaming server example in esp-adf libs. Needs investigating.
 
 would it make more sense to push stream to SONOS server?
+
 
 notes:
 
 Matrix-Voice-ESP32-MQTT-Audio-Streamer ( its a slightly different dev board but its ESP32 so same environment.
 
 https://github.com/Romkabouter/Matrix-Voice-ESP32-MQTT-Audio-Streamer/blob/master/MatrixVoiceAudioServer/MatrixVoiceAudioServer.ino
+
+esp-dsp libs. https://github.com/espressif/esp-dsp
