@@ -27,28 +27,54 @@
 #include "esp_dsp.h"
 #include "esp_system.h"
 
+#include "driver/spi_master.h"
+#include "soc/gpio_struct.h"
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "soc/uart_struct.h"
 
-
+#include "es8388.h" // codec control !
 
 
 static const char *TAG = "PHONO_DSP_STREAMER_ESP32";
 
-
-
-
-
  #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE  // change if needed, default is CONFIG_LOG_DEFAULT_LEVEL
 
-
+float freq;
+float qFactor;
 
 
 void app_main(void)
 {
 
+	// 8byte double RIAA phono curve for 48khz
+	double bb0 =  0.2275882473429072;
+	double bb1 = -0.1680644758323426;
+	double bb2 = -0.0408560856583673;
+	double aa1 =  0.85803894915999625;
+	double aa2 = -0.7179700042784745;
+
+	// cast to 4byte
+		float b0 = (float)bb0;
+		float b1 = (float)bb1;
+		float b2 = (float)bb2;
+		float a1 = (float)aa1;
+        float a2 = (float)aa2;
+
+   // uncomment to load RIIA phono curve ( comment / disable DSP_setup below  )
+   //  DSP_setup_fixedBiquad(b0,b1,b2,a1,a2);
 
 
+   // currently HPF, not LPF: set DSP EQ filter values here
+  	freq =  0.25; // 0 -> 0.5
+  	qFactor = 1; // 0 -> ?
 
-	// setup handles
+  	// ** run this any time you want to change DSP filter
+
+	 DSP_setup(freq,qFactor);
+
+
+// setup handles
 
 	audio_pipeline_handle_t pipeline;
 
@@ -65,20 +91,20 @@ void app_main(void)
     // init codec ic
 
 
-
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
     audio_board_handle_t board_handle = audio_board_init();
 
-    // AUDIO_HAL_ADC_INPUT_LINE1  LINE1 is ADC channel 1 ( mic input 1 and 2 )
+    // AUDIO_HAL_CODEC_MODE_LINE_IN line in --> HP amp !
 
-
+   // AUDIO_HAL_CODEC_MODE_BOTH is ADC and DAC on!
 
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
-    audio_hal_set_volume(board_handle->audio_hal,100);
+    audio_hal_set_volume(board_handle->audio_hal,70);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
+
 
 
 
@@ -101,6 +127,12 @@ void app_main(void)
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
+
+
+  // sets ADC input gain  0 = 0db
+  //   es8388_set_mic_gain(es_mic_gain_t gain);
+    es8388_set_mic_gain(0);
+
 
 
 
@@ -142,16 +174,11 @@ void app_main(void)
 
 	audio_pipeline_register(pipeline, DspProcessor, "DspProcessor");
 
-
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s_write");
-
-
 
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream_reader-->DspProcessor-->i2s_stream_writer-->[codec_chip]");
 
     audio_pipeline_link(pipeline, (const char *[]) {"i2s_read", "DspProcessor", "i2s_write"}, 3); // N components in audio pipeline
-
-
 
 
 //BEN tries to relink DspProcessor HOPEFULLY WE WON'T NEED THIS NOW ?
