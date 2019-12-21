@@ -62,7 +62,7 @@ void app_main(void)
         float a2 = (float)aa2;
 
    // uncomment to load RIIA phono curve ( comment / disable DSP_setup below  )
-   //  DSP_setup_fixedBiquad(b0,b1,b2,a1,a2);
+     DSP_setup_fixedBiquad(b0,b1,b2,a1,a2);
 
 
    // currently HPF, not LPF: set DSP EQ filter values here
@@ -71,7 +71,7 @@ void app_main(void)
 
   	// ** run this any time you want to change DSP filter
 
-	 DSP_setup(freq,qFactor);
+	// DSP_setup(freq,qFactor);
 
 
 // setup handles
