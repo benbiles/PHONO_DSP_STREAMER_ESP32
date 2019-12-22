@@ -11,6 +11,29 @@
 extern "C" {
 #endif
 
+
+// BEN proto for DSP setup propergate IIR DSP biquad values
+
+// run this in main to change freqncy and Q of LPF
+
+esp_err_t DSP_setup(float freq, float q);
+
+
+
+// BEN proto fixed biquads DSP setup
+void DSP_setup_fixedBiquad(float b0, float b1, float b2, float a1, float a2);
+
+
+
+// BEN creates Audio Element handle
+
+audio_element_handle_t Dsp_init();
+
+
+
+// this Configuration is just here for referance.. can go
+
+
 /**
  * @brief      Equalizer Configuration
  */
@@ -29,11 +52,6 @@ typedef struct equalizer_cfg {
 #define EQUALIZER_TASK_PRIO        (5)
 #define EQUALIZER_RINGBUFFER_SIZE  (8 * 1024)
 
-/**
- * @note  `set_value_gain` is defined in c file.
- *         values is {-13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13};
- */
-extern int set_value_gain[];
 
 #define DEFAULT_EQUALIZER_CONFIG() {                \
         .samplerate  = 48000,                       \
@@ -45,58 +63,11 @@ extern int set_value_gain[];
         .task_prio   = EQUALIZER_TASK_PRIO,         \
     }
 
-// BEN proto for DSP setup propergate IIR DSP biquad values
 
-// run this in main to change freqncy and Q of LPF
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 
-esp_err_t DSP_setup(float freq, float q);
 
-// BEN proto fixed biquads DSP setup
-void DSP_setup_fixedBiquad(float b0, float b1, float b2, float a1, float a2);
 
-/**
- * @brief      Set the audio sample rate and the number of channels to be processed by the equalizer.
- *
- * @param      self       Audio element handle
- * @param      rate       Audio sample rate
- * @param      ch         Audio channel
- *
- * @return
- *             ESP_OK
- *             ESP_FAIL
- */
-esp_err_t equalizer_set_info(audio_element_handle_t self, int rate, int ch);
 
-/**
- * @brief      Set the audio gain to be processed by the equalizer.
- *
- * @param      self                      Audio element handle
- * @param      index                     the position of center frequencies of equalizer
- * @param      value_gain                the value of audio gain which in `index`
- * @param      is_channels_gain_equal    if Number of audio channel is equal 2, the value of audio gains which two channels are equal by checking `is_channels_gain_equal`. if `is_channels_gain_equal` is `true`,it means equal,otherwise unequal.
- *
- * @return
- *             ESP_OK
- *             ESP_FAIL
- */
-esp_err_t equalizer_set_gain_info(audio_element_handle_t self, int index,
-		int value_gain, bool is_channels_gain_equal);
-
-/**
- * @brief      Create an Audio Element handle that equalizes incoming data.
- *
- * @param      config  The configuration
- *
- * @return     The created audio element handle
- */
-audio_element_handle_t equalizer_init(equalizer_cfg_t *config);
-
-// BEN creates Audio Element handle
-
-audio_element_handle_t Dsp_init();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
