@@ -22,7 +22,7 @@
 #include "board.h"
 #include "audio_hal.h"
 
-#include "equalizer.h"  // we may as well try the esp-adf equalizer to !
+#include "dsprunner.h"
 
 #include "esp_dsp.h"
 #include "esp_system.h"
@@ -74,7 +74,7 @@ void app_main(void)
 	// DSP_setup(freq,qFactor);
 
 
-// setup handles
+// SETUP HANDLES
 
 	audio_pipeline_handle_t pipeline;
 
@@ -92,22 +92,33 @@ void app_main(void)
 
 
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
-    audio_board_handle_t board_handle = audio_board_init();
 
-    // AUDIO_HAL_CODEC_MODE_LINE_IN line in --> HP amp !
+
 
    // AUDIO_HAL_CODEC_MODE_BOTH is ADC and DAC on!
 
+
+
+
+    // es8388_start(ES_MODULE_ADC_DAC);
+
+
+     audio_board_handle_t board_handle = audio_board_init();
+
+
+     // let hal control codec
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
-    audio_hal_set_volume(board_handle->audio_hal,70);
+
+    // set ADC input gain  0 = 0db
+        es8388_set_mic_gain(0);
+
+        es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
+
+
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
-
-
-
-
     pipeline = audio_pipeline_init(&pipeline_cfg);
 
 
@@ -128,10 +139,6 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-
-  // sets ADC input gain  0 = 0db
-  //   es8388_set_mic_gain(es_mic_gain_t gain);
-    es8388_set_mic_gain(0);
 
 
 
@@ -165,16 +172,17 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[3.3] Register all elements to audio pipeline");
 
+
+
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s_read");
 
-
-       // BEN audio pipeline equalizer  ( using DSP IIR instead )
+ //    BEN audio pipeline equalizer  ( using DSP IIR instead )
  //    audio_pipeline_register(pipeline, equalizer, "equalizer");
-
-
 	audio_pipeline_register(pipeline, DspProcessor, "DspProcessor");
 
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s_write");
+
+
 
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream_reader-->DspProcessor-->i2s_stream_writer-->[codec_chip]");
 

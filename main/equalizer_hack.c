@@ -262,6 +262,7 @@ for (int i = 0 ; i < bufSize ; i++)
 
 // half dsp outpt values sould be less than +/-1  ****************
 
+/*
 
 float devideitOUT = 0.5;
  for ( int z = 0; z < bufSize; z++ )
@@ -279,7 +280,7 @@ float devideitOUT = 0.5;
 	 FloatDspBufB[z] = -1;
  }}
 
-
+*/
 
 
 // Show IIR filter results once
