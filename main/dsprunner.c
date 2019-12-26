@@ -53,19 +53,33 @@ static FILE *infile;
 static float coeffs_lpf[5];
 float w_lpf[5]; // dsp delay line , set accoriding to IIR filter ?
 
-#define NNN 4096
+#define NNN 1024
 
 static int checkArray = 0;
 static int checkGraph = 0;
 
 int bufSize; // len is in bytes , change to int
+
 int16_t DspBuf[NNN];
-float FloatDspBuf[NNN];
-float FloatDspBufB[NNN];
+int16_t DspBufOut[NNN];
+
+
+float FloatDspBufL[NNN/2];
+float FloatDspBufR[NNN/2];
+
+float FloatDspBufBL[NNN/2];
+float FloatDspBufBR[NNN/2];
+
+
 
 // pointers for dsp lib
-const float *pFloatDspBuf = FloatDspBuf;
-float *pFloatDspBufB = FloatDspBufB;
+const float *pFloatDspBufL = FloatDspBufL;
+const float *pFloatDspBufR = FloatDspBufR;
+
+const float *pFloatDspBufBL = FloatDspBufBL;
+const float *pFloatDspBufBR = FloatDspBufBR;
+
+
 float *pcoeffs_lpf = coeffs_lpf;
 float *pw_lpf = w_lpf;
 
@@ -105,7 +119,7 @@ esp_err_t DSP_setup(float freq, float qFactor) {
 	w_lpf[0] = 2;
 	w_lpf[1] = 2;
 
-	ret = dsps_biquad_gen_hpf_f32(pcoeffs_lpf, freq, qFactor);
+	ret = dsps_biquad_gen_lpf_f32(pcoeffs_lpf, freq, qFactor);
 
 	if (ret != ESP_OK) {
 		ESP_LOGE(TAG, "Operation error dsps_biquad_gen_lpf_f32  = %i", ret);
@@ -159,8 +173,7 @@ void DSP_setup_fixedBiquad(float b0, float b1, float b2, float a1, float a2) {
 
 // ********** PROCESS the buffer with DSP IIR !!
 
-static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,
-		int len) {
+static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,int len) {
 
 // Audio samples input
 	audio_element_input(self, (char*) DspBuf, len);
@@ -168,109 +181,94 @@ static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,
 // *************    DSP Process DspBuf here ********************************
 
 // ****** len is meshured in bytes ( buffer leghth is half for int16_t )
-	bufSize = len / 2;
 
-	// check array and clean it
-	if (checkArray == 0) {
-		// Generate d function as input signal
-		dsps_d_gen_f32(FloatDspBuf, bufSize, 0);
-		checkArray = 1;
-	}
+	bufSize = len / 2; // int16 bufsize
+
 
 // convert 16bit audio smaples to float ****************
-	for (int i = 0; i < bufSize; i++) {
-		FloatDspBuf[i] = ((float) DspBuf[i]) / (float) 32768;
+		int x=0;
+	for (int i = 0; i < bufSize; i=i+2) {
+		FloatDspBufL[x] = ((float) DspBuf[i]) / 32768;
+	    FloatDspBufR[x] = ((float) DspBuf[i+1]) / 32768;
+	    x++;
 	}
 
-	/*
 
-	 float devideitIN = 0.5;
-	 for ( int z = 0; z < bufSize; z++ )
-	 {
-	 FloatDspBuf[z] = FloatDspBuf[z] * devideitIN;  // half, depends on delay line size !!
 
-	 if ( FloatDspBuf[z] >1 )
-	 {
-	 ESP_LOGI(TAG,"WARN out of range > 1 ");
-	 FloatDspBuf[z] = 1;
-	 }
-	 if ( FloatDspBuf[z] < -1 )
-	 {
-	 ESP_LOGI(TAG,"WARN out of range < -1 ");
-	 FloatDspBuf[z] = -1;
-	 }}
-
-	 */
 
 // DSP IIR biquad process
 	esp_err_t rett = ESP_OK;
-	rett = dsps_biquad_f32(pFloatDspBuf, pFloatDspBufB, bufSize, pcoeffs_lpf,
-			pw_lpf);
+
+	int dspBufSize = bufSize/2; //
+
+rett = dsps_biquad_f32_ae32(pFloatDspBufL,FloatDspBufBL,dspBufSize,pcoeffs_lpf,pw_lpf);
 
 	if (rett != ESP_OK) {
-		ESP_LOGE(TAG, "DSP IIR Operation error = %i", rett);
+		ESP_LOGE(TAG, "DSP IIR LEFT channel Operation error = %i", rett);
 		return rett;
 	}
 
-	/*
-	 // ANCI C BIQUAD IIR version working more CPU cycles !!
+	esp_err_t rettb = ESP_OK;
+rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,pw_lpf);
 
+	if (rettb != ESP_OK) {
+		ESP_LOGE(TAG, "DSP IIR LEFT Operation error = %i", rettb);
+		return rettb;
+	}
+
+
+
+
+/*
+	 // ANCI C BIQUAD IIR more CPU cycles same thing !!
 	 for (int i = 0 ; i < bufSize ; i++)
 	 {
-	 const float d0 = FloatDspBuf[i] - coeffs_lpf[3] * w_lpf[0] - coeffs_lpf[4] * w_lpf[1];
-	 FloatDspBufB[i] = coeffs_lpf[0] * d0 +  coeffs_lpf[1] * w_lpf[0] + coeffs_lpf[2] * w_lpf[1];
+	 const float d0 = FloatDspBufL[i] - coeffs_lpf[3] * w_lpf[0] - coeffs_lpf[4] * w_lpf[1];
+	 FloatDspBufBL[i] = coeffs_lpf[0] * d0 +  coeffs_lpf[1] * w_lpf[0] + coeffs_lpf[2] * w_lpf[1];
 	 w_lpf[1] = w_lpf[0];
 	 w_lpf[0] = d0;
+
+	  const float e0 = FloatDspBufR[i] - coeffs_lpf[3] * w_lpf[0] - coeffs_lpf[4] * w_lpf[1];
+	 FloatDspBufBR[i] = coeffs_lpf[0] * e0 +  coeffs_lpf[1] * w_lpf[0] + coeffs_lpf[2] * w_lpf[1];
+	 w_lpf[1] = w_lpf[0];
+	 w_lpf[0] = e0;
+
 	 }
-	 */
+*/
 
-// half dsp outpt values sould be less than +/-1  ****************
-	float devideitOUT = 0.5;
-	for (int z = 0; z < bufSize; z++) {
-		FloatDspBufB[z] = FloatDspBufB[z] * devideitOUT; // half, depends on delay line size !!
 
-		if (FloatDspBufB[z] > 1) {
-			ESP_LOGI(TAG, "DSP element WARNING out of range > 1 ");
-			FloatDspBufB[z] = 1;
-		}
-		if (FloatDspBufB[z] < -1) {
-			ESP_LOGI(TAG, "DSP element WARNING out of range < -1 ");
-			FloatDspBufB[z] = -1;
-		}
-	}
 
 // Show IIR filter results once
 	if (checkGraph == 0) {
 
-		ESP_LOGI(TAG, "Impulse response of IIR filter with F=%f, qFactor=%f",
+		ESP_LOGI(TAG, "IIR filter LEFT with F=%f, qFactor=%f",
 				graphFreq, graphQ);
-		dsps_view(pFloatDspBufB, 128, 64, 10, -1, 1, 'x');
+		dsps_view(pFloatDspBufBL, 128, 64, 10, -1, 1, 'x');
 
-		checkGraph = 1;
+	    ESP_LOGI(TAG, "IIR filter RIGHT with F=%f, qFactor=%f",
+				graphFreq, graphQ);
+		dsps_view(pFloatDspBufBR, 128, 64, 10, -1, 1, 'x');
+
+			checkGraph = 1;
+		}
+
+
+
+
+	int z =0;
+	for (int pp = 0; pp < bufSize; pp=pp+2) {
+	DspBufOut[pp] = FloatDspBufBL[z]* 32767; // cast back
+	DspBufOut[pp+1] = FloatDspBufBR[z]* 32767; // cast back
+	z++;
 	}
 
-	/*
-	 // ****** WARNING ENABLE TO BYPASS DSP  ****************
-	 for ( int z = 0; z < bufSize; z++ )
-	 {
-	 FloatDspBufB[z] = FloatDspBuf[z];
-	 }
-	 */
+	//**** WARN using DspBufOut[] to output now
 
-// convert float audio samples back into 16bit audio samples for pipeline
-	for (int j = 0; j < bufSize; j++) {
-		FloatDspBufB[j] = FloatDspBufB[j] * 32767;
-		if (FloatDspBufB[j] > 32767)
-			FloatDspBufB[j] = 32768;
-		if (FloatDspBufB[j] < -32768)
-			FloatDspBufB[j] = -32768;
-		DspBuf[j] = (int16_t) FloatDspBufB[j]; // cast back
-	}
 
 /// ************* END DSP Process ********************************
 
 // Audio samples output
-	int ret = audio_element_output(self, (char*) DspBuf, len);
+	int ret = audio_element_output(self, (char*) DspBufOut, len);
 	return (audio_element_err_t) ret;
 }
 
@@ -290,7 +288,7 @@ audio_element_handle_t Dsp_init()  // no equalizer array to pass in !
 	DspCfg.close = Dsp_close;
 	DspCfg.buffer_len = (1024);
 	DspCfg.tag = "Dsp";
-	DspCfg.task_stack = (2 * 1024);
+	DspCfg.task_stack = (2 * 2046);
 	DspCfg.task_prio = (5);
 	DspCfg.task_core = (0); // core 1 has FPU issues lol
 	DspCfg.out_rb_size = (8 * 1024);
@@ -300,4 +298,3 @@ audio_element_handle_t Dsp_init()  // no equalizer array to pass in !
 }
 
 // END BEN DSP functions
-

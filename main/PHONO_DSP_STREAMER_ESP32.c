@@ -1,8 +1,6 @@
-/* PHONO_DSP_STREAMER_ESP32
+/* PHONO_DSP_STREAMER_ESP32 ben biles 2019
  *
-
    This example code is in the Public Domain (or CC0 licensed, at your option.)
-
    Unless required by applicable law or agreed to in writing, this
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
@@ -61,17 +59,19 @@ void app_main(void)
 		float a1 = (float)aa1;
         float a2 = (float)aa2;
 
-   // uncomment to load RIIA phono curve ( comment / disable DSP_setup below  )
-     DSP_setup_fixedBiquad(b0,b1,b2,a1,a2);
+   // UNCOMMENT to load RIIA phono curve ( comment / disable DSP_setup below  )
+   // if using must comment out DSP_setup(freq,qFactor);
+
+   // DSP_setup_fixedBiquad(b0,b1,b2,a1,a2);
 
 
    // currently HPF, not LPF: set DSP EQ filter values here
-  	freq =  0.25; // 0 -> 0.5
+  	freq =  0.3; // 0 -> 0.5
   	qFactor = 1; // 0 -> ?
 
   	// ** run this any time you want to change DSP filter
 
-	// DSP_setup(freq,qFactor);
+	 DSP_setup(freq,qFactor);
 
 
 // SETUP HANDLES
@@ -88,25 +88,9 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
 
-    // init codec ic
-
-
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
-
-
-
-   // AUDIO_HAL_CODEC_MODE_BOTH is ADC and DAC on!
-
-
-
-
-    // es8388_start(ES_MODULE_ADC_DAC);
-
-
      audio_board_handle_t board_handle = audio_board_init();
-
-
-     // let hal control codec
+    // hal controls codec ic
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
 
@@ -115,85 +99,36 @@ void app_main(void)
 
         es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
 
-
-
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
     pipeline = audio_pipeline_init(&pipeline_cfg);
-
-
 
     ESP_LOGI(TAG, "[3.2] Create i2s stream to read data from codec chip");
     i2s_stream_cfg_t i2s_cfg_read = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg_read.type = AUDIO_STREAM_READER;
     i2s_stream_reader = i2s_stream_init(&i2s_cfg_read);
 
-
-   //   This is done in equalizer.c
-
-   //   DspProcessor = audio_element_init(&DspCfg);
-
-
     ESP_LOGI(TAG, "[3.1] Create i2s stream to write data to codec chip");
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
 
-
-
-
-
-  //     equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
-
-
-// this sets the multi-band equaliser gains ( simple test )
-// 31 Hz, 62 Hz, 125 Hz, 250 Hz, 500 Hz, 1 kHz, 2 kHz, 4 kHz, 8 kHz 16 kHz
-
-  // set to approx RIIA phono curve
-  // added 7db to whole range as example notes said min gain -13db
-  // compensate ? pull input gain to this element -7db?
-
-    //   int set_gain[] = { 27, 23, 19, 15, 12, 7, 6, 3, -3, -13,   // left
-    //   		           27, 23, 19, 15, 12, 7, 6, 3, -3, -13};  // right
-
-// The size of gain array should be the multiplication of NUMBER_BAND and number channels of audio stream data.
-// The minimum of gain is -13 dB ??
-
-  //   eq_cfg.set_gain = set_gain;
-
-  //   equalizer = equalizer_init(&eq_cfg);
-
-
-
-    //BEN initialize the DSP IIR filter code hacked into equalizer.c
-    // make proper element DSPprocess.c and DSPprocess.h if this works
-    DspProcessor = Dsp_init();
+    // define DspProcessor
+     DspProcessor = Dsp_init();
 
 
     ESP_LOGI(TAG, "[3.3] Register all elements to audio pipeline");
 
-
-
     audio_pipeline_register(pipeline, i2s_stream_reader, "i2s_read");
 
- //    BEN audio pipeline equalizer  ( using DSP IIR instead )
- //    audio_pipeline_register(pipeline, equalizer, "equalizer");
 	audio_pipeline_register(pipeline, DspProcessor, "DspProcessor");
 
     audio_pipeline_register(pipeline, i2s_stream_writer, "i2s_write");
 
 
-
     ESP_LOGI(TAG, "[3.4] Link it together [codec_chip]-->i2s_stream_reader-->DspProcessor-->i2s_stream_writer-->[codec_chip]");
 
     audio_pipeline_link(pipeline, (const char *[]) {"i2s_read", "DspProcessor", "i2s_write"}, 3); // N components in audio pipeline
-
-
-//BEN tries to relink DspProcessor HOPEFULLY WE WON'T NEED THIS NOW ?
-
-//	const char * boomer[] = {"i2s_read","DspProcessor","i2s_write" };
-//  audio_pipeline_relink(pipeline, boomer, 3);
-
 
 
     ESP_LOGI(TAG, "[ 4 ] Set up  event listener");
@@ -205,8 +140,6 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 5 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
-
-
 
 
     // Print errors / events to console
@@ -234,7 +167,8 @@ void app_main(void)
         }
     }
 
-  //  ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
+
+    //  ESP_LOGI(TAG, "[ 7 ] Stop audio_pipeline");
     audio_pipeline_terminate(pipeline);
 
     audio_pipeline_unregister(pipeline, i2s_stream_reader);
