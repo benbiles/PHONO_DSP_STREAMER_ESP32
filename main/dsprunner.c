@@ -1,9 +1,15 @@
 // dsprunner.c  Ben Biles
-
+/*
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 #include <math.h>
 #include <assert.h>
 #include <stdint.h>
-
 #include <string.h>
 #include "esp_log.h"
 #include "audio_error.h"
@@ -12,10 +18,9 @@
 #include "audio_element.h"
 #include "dsprunner.h"
 #include "audio_type_def.h"
-
 #include "esp_system.h"
 
-//  BEN dsp lib
+//  BEN adds dsp lib
 #include "esp_dsp.h"
 
 static const char *TAG = "EQUALIZER";
@@ -23,8 +28,6 @@ static const char *TAG = "EQUALIZER";
 #define BUF_SIZE (100)
 #define NUMBER_BAND (10)
 #define USE_XMMS_ORIGINAL_FREQENT (0)
-// #define EQUALIZER_MEMORY_ANALYSIS
-// #define DEBUG_EQUALIZER_ENC_ISSUE
 
 typedef struct equalizer {
 	int samplerate;
@@ -39,38 +42,25 @@ typedef struct equalizer {
 	int gain_flag;
 } equalizer_t;
 
-int set_value_gain[NUMBER_BAND * 2] = { -13, -13, -13, -13, -13, -13, -13, -13,
-		-13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13, -13 };
-
-#ifdef DEBUG_EQUALIZER_ENC_ISSUE
-static FILE *infile;
-#endif
-
-/// BEN start DSP HACK
-
-// should match bit rate in pipeline?
 
 static float coeffs_lpf[5];
 float w_lpf[5]; // dsp delay line , set accoriding to IIR filter ?
 
-#define NNN 1024
+#define NNN 1024  // buffer size
 
 static int checkArray = 0;
 static int checkGraph = 0;
 
-int bufSize; // len is in bytes , change to int
+int bufSize; // len is in bytes , were using inst16 samples
 
 int16_t DspBuf[NNN];
 int16_t DspBufOut[NNN];
-
 
 float FloatDspBufL[NNN/2];
 float FloatDspBufR[NNN/2];
 
 float FloatDspBufBL[NNN/2];
 float FloatDspBufBR[NNN/2];
-
-
 
 // pointers for dsp lib
 const float *pFloatDspBufL = FloatDspBufL;
@@ -176,13 +166,13 @@ void DSP_setup_fixedBiquad(float b0, float b1, float b2, float a1, float a2) {
 static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,int len) {
 
 // Audio samples input
-	audio_element_input(self, (char*) DspBuf, len);
+audio_element_input(self, (char*) DspBuf, len);
 
 // *************    DSP Process DspBuf here ********************************
 
 // ****** len is meshured in bytes ( buffer leghth is half for int16_t )
 
-	bufSize = len / 2; // int16 bufsize
+	bufSize = len /2; // int16 bufsize
 
 
 // convert 16bit audio smaples to float ****************
@@ -193,13 +183,12 @@ static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf,
 	    x++;
 	}
 
+ // DSP IIR biquad process
+ esp_err_t rett = ESP_OK;
 
+ //****** less crackle without /2  ? why ?
+ int dspBufSize = bufSize;  // LEFT or RIGHT samples so half again
 
-
-// DSP IIR biquad process
-	esp_err_t rett = ESP_OK;
-
-	int dspBufSize = bufSize/2; //
 
 rett = dsps_biquad_f32_ae32(pFloatDspBufL,FloatDspBufBL,dspBufSize,pcoeffs_lpf,pw_lpf);
 
@@ -216,9 +205,6 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 		return rettb;
 	}
 
-
-
-
 /*
 	 // ANCI C BIQUAD IIR more CPU cycles same thing !!
 	 for (int i = 0 ; i < bufSize ; i++)
@@ -232,10 +218,8 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 	 FloatDspBufBR[i] = coeffs_lpf[0] * e0 +  coeffs_lpf[1] * w_lpf[0] + coeffs_lpf[2] * w_lpf[1];
 	 w_lpf[1] = w_lpf[0];
 	 w_lpf[0] = e0;
-
 	 }
 */
-
 
 
 // Show IIR filter results once
@@ -249,11 +233,8 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 				graphFreq, graphQ);
 		dsps_view(pFloatDspBufBR, 128, 64, 10, -1, 1, 'x');
 
-			checkGraph = 1;
+		checkGraph = 1;
 		}
-
-
-
 
 	int z =0;
 	for (int pp = 0; pp < bufSize; pp=pp+2) {

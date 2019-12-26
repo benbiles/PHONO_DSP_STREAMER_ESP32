@@ -1,9 +1,12 @@
 /* PHONO_DSP_STREAMER_ESP32 ben biles 2019
  *
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
 */
 
 // used for DSP
@@ -82,18 +85,16 @@ void app_main(void)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 
 
-    // set ADC input gain  0 = 0db
-    es8388_set_mic_gain(0);
-
-    // audio hal should do this for us
-    //es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
-
-
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
      audio_board_handle_t board_handle = audio_board_init();
     // hal controls codec ic
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
+    // audio hal should do this for us
+    es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
+
+    // set ADC input gain  0 = 0db
+    es8388_set_mic_gain(0);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
