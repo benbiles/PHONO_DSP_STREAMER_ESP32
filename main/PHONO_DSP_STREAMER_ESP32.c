@@ -73,19 +73,20 @@ void app_main(void)
 
 	 DSP_setup(freq,qFactor);
 
+   // pipe handle
+   audio_pipeline_handle_t pipeline;
 
-// SETUP HANDLES
-
-	audio_pipeline_handle_t pipeline;
-
-
-	// Ben add in "equalizer" element here if we use equalizer
-
-    audio_element_handle_t i2s_stream_reader,DspProcessor,i2s_stream_writer; // equalizer disabled
-
+   audio_element_handle_t i2s_stream_reader,DspProcessor,i2s_stream_writer; // equalizer disabled
 
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
+
+
+    // set ADC input gain  0 = 0db
+    es8388_set_mic_gain(0);
+
+    // audio hal should do this for us
+    //es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
 
 
     ESP_LOGI(TAG, "[ 1 ] Start codec chip");
@@ -93,11 +94,6 @@ void app_main(void)
     // hal controls codec ic
     audio_hal_ctrl_codec(board_handle->audio_hal, AUDIO_HAL_CODEC_MODE_BOTH, AUDIO_HAL_CTRL_START);
 
-
-    // set ADC input gain  0 = 0db
-        es8388_set_mic_gain(0);
-
-        es8388_set_bits_per_sample(ES_MODULE_ADC_DAC,BIT_LENGTH_16BITS);
 
     ESP_LOGI(TAG, "[ 2 ] Create audio pipeline for playback");
     audio_pipeline_cfg_t pipeline_cfg = DEFAULT_AUDIO_PIPELINE_CONFIG();
@@ -143,8 +139,8 @@ void app_main(void)
 
 
     // Print errors / events to console
-
     ESP_LOGI(TAG, "[ 6 ] Listen for all pipeline events");
+
 
     while (1) {
         audio_event_iface_msg_t msg;
