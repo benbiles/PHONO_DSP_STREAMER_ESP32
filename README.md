@@ -31,7 +31,7 @@ DSP biquad IIR EQ working!
 
 use vol up / down to change LPF frequency
 
-use PLAY / SET button to change Q factor
+use REC / MODE button to change Q factor
 
 uncomment DSP_setup_fixedBiquad(b0,b1,b2,a1,a2); for phono RIIA curve
 

@@ -60,7 +60,7 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
 
             case INPUT_KEY_USER_ID_REC:
             ESP_LOGI(TAG, "[ * ] [Play] input key event");
-            qFactor += 0.5;
+            qFactor += 0.1;
             if (qFactor > 10) {qFactor = 10;  }
             DSP_setup(freq,qFactor);
             ESP_LOGI(TAG, "[ * ] qFactor to %f %%",qFactor);
@@ -68,8 +68,8 @@ static esp_err_t input_key_service_cb(periph_service_handle_t handle, periph_ser
 
             case INPUT_KEY_USER_ID_MODE:
             ESP_LOGI(TAG, "[ * ] [Set] input key event");
-            qFactor -= 0.5;
-            if (qFactor < 0.01) { qFactor = 0.01;}
+            qFactor -= 0.1;
+            if (qFactor < 0.1) { qFactor = 0.01;}
             DSP_setup(freq,qFactor);
             ESP_LOGI(TAG, "[ * ] qFactor to %f %%",qFactor);
             break;
