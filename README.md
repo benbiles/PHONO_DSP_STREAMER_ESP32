@@ -1,28 +1,49 @@
 PHONO_DSP_STREAMER_ESP32
-Phono Preamp DSP RIAA curve streamer for SONOS and other http HLS capable WiFi audio speakers
 
-Initially designed to run on ESP32-LyraT hardware using esp-idf libs ( Espressif IoT Development Framework ) and esp-adf libs.
+EQ preamp streamer
 
-DEV BOARD https://www.espressif.com/en/products/hardware/esp32-lyrat
+HARDWARE
 
-ESP-ADF  https://github.com/espressif/esp-adf
+ESP32-LyraT 4.3
+
+
+Code depends on
+
+ESP-ADF
+
+https://github.com/espressif/esp-adf
+
+ESP-IDF
+
+compatible IDF at time of writing, check ADF github for current compatible version of ESP-IDF
+
+https://docs.espressif.com/projects/esp-idf/en/v3.3.1/versions.html
+
+ESP-DSP
+
+https://github.com/espressif/esp-dsp
+
+download ESP-DSP to project directory recursively ( follow instruction )
+
 
 
 DSP biquad IIR EQ working!
 
-LINE LEVEL input to HeadPhone output PASSTHROUGH
+use vol up / down to change LPF frequency
 
+use PLAY / SET button to change Q factor
 
-warning, use ESP-ADF and ONLY compatible ESP-IDF. instructions on ESP-ADF github
+uncomment DSP_setup_fixedBiquad(b0,b1,b2,a1,a2); for phono RIIA curve
 
 
 PHASE 1 testing / notes
 
+some crackling caused by delay line in DSP.
+The DSP IIR filter processes with a delay line of 2.
 
-rename equalizer_hack.c to equalizer.c and replace in ESP-ADF framework.
-
-remove equalizer_hack.c from main folder.
-
+adjust timing in pipline to fix ?
+add equivalent delay to pipeline ? or make a small ring buffer ?
+delay line of 2 would be 2048 samples ( about 4.3ms)
 
 PHASE 2
 

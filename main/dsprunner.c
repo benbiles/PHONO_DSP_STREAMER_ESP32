@@ -51,16 +51,21 @@ float w_lpf[5]; // dsp delay line , set accoriding to IIR filter ?
 static int checkArray = 0;
 static int checkGraph = 0;
 
+
 int bufSize; // len is in bytes , were using inst16 samples
 
 int16_t DspBuf[NNN];
 int16_t DspBufOut[NNN];
+
 
 float FloatDspBufL[NNN/2];
 float FloatDspBufR[NNN/2];
 
 float FloatDspBufBL[NNN/2];
 float FloatDspBufBR[NNN/2];
+
+
+
 
 // pointers for dsp lib
 const float *pFloatDspBufL = FloatDspBufL;
@@ -70,8 +75,9 @@ const float *pFloatDspBufBL = FloatDspBufBL;
 const float *pFloatDspBufBR = FloatDspBufBR;
 
 
-float *pcoeffs_lpf = coeffs_lpf;
-float *pw_lpf = w_lpf;
+
+static float *pcoeffs_lpf = coeffs_lpf;
+static float *pw_lpf = w_lpf;
 
 float graphFreq;
 float graphQ;
@@ -183,11 +189,13 @@ audio_element_input(self, (char*) DspBuf, len);
 	    x++;
 	}
 
+
+
  // DSP IIR biquad process
  esp_err_t rett = ESP_OK;
 
- //****** less crackle without /2  ? why ?
- int dspBufSize = bufSize;  // LEFT or RIGHT samples so half again
+ // less crackle without /2  ? why ?
+ int dspBufSize = bufSize /2;  // LEFT or RIGHT samples so half again
 
 
 rett = dsps_biquad_f32_ae32(pFloatDspBufL,FloatDspBufBL,dspBufSize,pcoeffs_lpf,pw_lpf);
@@ -205,6 +213,8 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 		return rettb;
 	}
 
+
+
 /*
 	 // ANCI C BIQUAD IIR more CPU cycles same thing !!
 	 for (int i = 0 ; i < bufSize ; i++)
@@ -214,11 +224,12 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 	 w_lpf[1] = w_lpf[0];
 	 w_lpf[0] = d0;
 
-	  const float e0 = FloatDspBufR[i] - coeffs_lpf[3] * w_lpf[0] - coeffs_lpf[4] * w_lpf[1];
+	 const float e0 = FloatDspBufR[i] - coeffs_lpf[3] * w_lpf[0] - coeffs_lpf[4] * w_lpf[1];
 	 FloatDspBufBR[i] = coeffs_lpf[0] * e0 +  coeffs_lpf[1] * w_lpf[0] + coeffs_lpf[2] * w_lpf[1];
 	 w_lpf[1] = w_lpf[0];
 	 w_lpf[0] = e0;
 	 }
+
 */
 
 
@@ -236,6 +247,21 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 		checkGraph = 1;
 		}
 
+
+/*
+	// bypass DSP testing ///////////////
+
+	for (int v = 0; v < bufSize/2; v++) {
+
+		FloatDspBufBL[v] = FloatDspBufL[v];
+		FloatDspBufBR[v] = FloatDspBufR[v];
+		}
+	/////////////////
+*/
+
+
+
+
 	int z =0;
 	for (int pp = 0; pp < bufSize; pp=pp+2) {
 	DspBufOut[pp] = FloatDspBufBL[z]* 32767; // cast back
@@ -243,19 +269,25 @@ rettb = dsps_biquad_f32_ae32(pFloatDspBufR,FloatDspBufBR,dspBufSize,pcoeffs_lpf,
 	z++;
 	}
 
+
+
 	//**** WARN using DspBufOut[] to output now
 
 
 /// ************* END DSP Process ********************************
 
-// Audio samples output
+// Audio samples OUTPUT
+
 	int ret = audio_element_output(self, (char*) DspBufOut, len);
+
 	return (audio_element_err_t) ret;
 }
+
 
 static esp_err_t Dsp_destroy(audio_element_handle_t self) {
 	return ESP_OK;
 }
+
 
 audio_element_handle_t Dsp_init()  // no equalizer array to pass in !
 {
@@ -270,7 +302,7 @@ audio_element_handle_t Dsp_init()  // no equalizer array to pass in !
 	DspCfg.buffer_len = (1024);
 	DspCfg.tag = "Dsp";
 	DspCfg.task_stack = (2 * 2046);
-	DspCfg.task_prio = (5);
+	DspCfg.task_prio = (10);
 	DspCfg.task_core = (0); // core 1 has FPU issues lol
 	DspCfg.out_rb_size = (8 * 1024);
 
