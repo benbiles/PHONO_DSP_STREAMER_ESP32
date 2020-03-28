@@ -38,12 +38,12 @@ uncomment DSP_setup_fixedBiquad(b0,b1,b2,a1,a2); for phono RIIA curve
 
 PHASE 1 testing / notes
 
-some crackling caused by delay line in DSP.
+some crackling caused by not oversampling ?
 The DSP IIR filter processes with a delay line of 2.
 
-adjust timing in pipline to fix ?
-add equivalent delay to pipeline ? or make a small ring buffer ?
-delay line of 2 would be 2048 samples ( about 4.3ms)
+I should sample at twice needed sample rate to get rid of noise ??
+Needs to fix this before moving on to phase 2!
+
 
 PHASE 2
 
@@ -56,19 +56,13 @@ PHASE 2
 
 PHASE 3.
 
-fire up wifi and push stream to laptop in 48khz 16bit pcm
+fire up wifi and push stream to laptop in 48khz 16bit pcm ?
 
-try a few other compressions ( aac opus etc )
+NOTE:
 
-No obvious http HLS streaming server example in esp-adf libs. Needs investigating.
+No obvious http HLS streaming server example in esp-adf libs. is it possible? I dought it !
 
-would it make more sense to push stream to SONOS server?
-
-
-notes:
-
-Matrix-Voice-ESP32-MQTT-Audio-Streamer ( its a slightly different dev board but its ESP32 so same environment.
+Matrix-Voice-ESP32-MQTT-Audio-Streamer ( its a slightly different dev board but its ESP32 so same environment ?
 
 https://github.com/Romkabouter/Matrix-Voice-ESP32-MQTT-Audio-Streamer/blob/master/MatrixVoiceAudioServer/MatrixVoiceAudioServer.ino
 
-esp-dsp libs. https://github.com/espressif/esp-dsp
