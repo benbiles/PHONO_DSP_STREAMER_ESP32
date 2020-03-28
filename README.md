@@ -47,7 +47,7 @@ Needs to fix this before moving on to phase 2!
 
 PHASE 2
 
-1, test with technics SL-15 record deck.
+1, test with record deck.
 
 2, add digital controlled preamp in from of codec if required for proto.
 
